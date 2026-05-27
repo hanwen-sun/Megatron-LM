@@ -510,9 +510,10 @@ def test_wrap_dataloader(tp, pp, cp, vpp, scheduler_type):
                 token_sum_before = torch.tensor(0, dtype=torch.int64, device='cuda')
                 for sample in samples:
                     token_sum_before += sample['tokens'].long().sum()
-                torch.distributed.all_reduce(
-                    token_sum_before, op=torch.distributed.ReduceOp.SUM, group=dp_group
-                )
+                if dp_group.size() > 1:
+                    torch.distributed.all_reduce(
+                        token_sum_before, op=torch.distributed.ReduceOp.SUM, group=dp_group
+                    )
                 token_sum_before *= max_cp
 
                 # After wrap.
@@ -528,9 +529,10 @@ def test_wrap_dataloader(tp, pp, cp, vpp, scheduler_type):
                         mb_cp_group = parallel_state.get_dynamic_data_context_parallel_groups(
                             group_size=local_cp
                         )
-                        torch.distributed.all_reduce(
-                            mb_sum, op=torch.distributed.ReduceOp.SUM, group=mb_cp_group
-                        )
+                        if mb_cp_group.size() > 1:
+                            torch.distributed.all_reduce(
+                                mb_sum, op=torch.distributed.ReduceOp.SUM, group=mb_cp_group
+                            )
                         # all_reduce result = mb_sum * local_cp.
                         # Scale to mb_sum * max_cp.
                         mb_sum *= max_cp // local_cp
@@ -543,9 +545,10 @@ def test_wrap_dataloader(tp, pp, cp, vpp, scheduler_type):
                     # Reduce across DP only (same as before).
                     for batch in batch_all:
                         token_sum_after += batch['tokens'].long().sum()
-                    torch.distributed.all_reduce(
-                        token_sum_after, op=torch.distributed.ReduceOp.SUM, group=dp_group
-                    )
+                    if dp_group.size() > 1:
+                        torch.distributed.all_reduce(
+                            token_sum_after, op=torch.distributed.ReduceOp.SUM, group=dp_group
+                        )
                     token_sum_after *= max_cp
 
                 assert (
