@@ -802,7 +802,7 @@ def _tag_muon_split_qkv_parameters(
         """
         if 'linear_qkv.weight' in name:
             return True
-        if attn_variant != "mha":
+        if attn_variant != "mla":
             return False
         return any(
             f'{projection}.weight' in name
